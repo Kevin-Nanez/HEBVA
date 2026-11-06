@@ -1,0 +1,104 @@
+#!/bin/sh
+# Bloquea el commit si gitleaks encuentra secretos en los cambios preparados (K03 del plan) o si falla
+# la suite de pruebas (K36, T5.5). Corre en este orden y se detiene en la primera etapa que falle:
+#   1. gitleaks sobre lo preparado.
+#   2. La extensión fts de DuckDB. Sin ella, 18 módulos de pruebas se saltan (el ciclo del agente, los
+#      topes, el registro) y la suite pasaría sin probarlos. Solo la carga; instalarla necesita red
+#      y es un paso aparte del README.
+#   3. pytest-xdist, que reparte la suite en procesos (requirements-dev.txt).
+#   4. pytest sobre tests/ en 8 procesos, sin llaves y sin red, y después tests/test_reintentos.py solo.
+#   5. Que lo preparado no haya cambiado mientras corría la etapa 4, que tarda minutos.
+# Se activa una vez por clon con: git config core.hooksPath .githooks
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: falta gitleaks en el PATH; se bloquea el commit." >&2
+  echo "Para instalarlo: winget install --id Gitleaks.Gitleaks" >&2
+  exit 1
+fi
+
+if ! gitleaks git --pre-commit --staged --redact --no-banner --verbose; then
+  echo "pre-commit: gitleaks no dejó pasar los cambios preparados; se bloquea el commit." >&2
+  exit 1
+fi
+
+# Lo que gitleaks acaba de revisar es lo preparado en este momento. Las pruebas tardan minutos y git relee el
+# índice al terminar el hook: un git add de otro proceso en ese lapso entraría al commit sin pasar por
+# gitleaks. Se guarda una huella del índice (modo, contenido y ruta de cada archivo preparado) y se compara
+# al final.
+INDICE="$GIT_INDEX_FILE"
+huella_de_lo_preparado() {
+  if [ -n "$INDICE" ]; then
+    GIT_INDEX_FILE="$INDICE" git ls-files --stage | cksum
+  else
+    git ls-files --stage | cksum
+  fi
+}
+HUELLA_PREPARADA=$(huella_de_lo_preparado)
+
+if [ -x .venv/Scripts/python.exe ]; then
+  PYTHON=.venv/Scripts/python.exe
+elif [ -x .venv/bin/python ]; then
+  PYTHON=.venv/bin/python
+else
+  echo "pre-commit: no hay entorno virtual en .venv; se bloquea el commit." >&2
+  echo "Para crearlo: python -m venv .venv, y después pip install --require-hashes -r requirements.txt" >&2
+  exit 1
+fi
+
+# Desde aquí, el entorno de la suite. Sin las variables GIT_* que git le pasa al hook, porque un git que
+# corra una prueba actuaría sobre el índice de este commit y no sobre el de su repositorio temporal.
+# Sin llaves ni modelo configurado, y sin PROBAR_CON_RED, que activa las pruebas que bajan paquetes.
+# Con un proxy que no responde, de modo que cualquier salida a la red falle en lugar de salir; lo que
+# habla por localhost no pasa por el proxy.
+for variable in $(git rev-parse --local-env-vars); do
+  unset "$variable"
+done
+unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL GOOGLE_API_KEY GEMINI_API_KEY OPENAI_API_KEY
+unset MODELO PROBAR_CON_RED
+PROXY_QUE_NO_RESPONDE=http://127.0.0.1:9
+export HTTP_PROXY="$PROXY_QUE_NO_RESPONDE" HTTPS_PROXY="$PROXY_QUE_NO_RESPONDE" ALL_PROXY="$PROXY_QUE_NO_RESPONDE"
+export http_proxy="$PROXY_QUE_NO_RESPONDE" https_proxy="$PROXY_QUE_NO_RESPONDE" all_proxy="$PROXY_QUE_NO_RESPONDE"
+export NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1
+
+if ! "$PYTHON" - <<'COMPROBAR_FTS'
+import sys
+
+import duckdb
+from agente.construir import ExtensionNoDisponible, cargar_fts
+
+try:
+    cargar_fts(duckdb.connect(), instalar=False)
+except ExtensionNoDisponible as error:
+    sys.exit(str(error))
+COMPROBAR_FTS
+then
+  echo "pre-commit: falta la extensión fts de DuckDB; se bloquea el commit." >&2
+  echo "Se instala una vez, con red: .venv/Scripts/python -m agente.construir (ver el README, sección de fts)." >&2
+  exit 1
+fi
+
+# Sin pytest-xdist, pytest no entiende -n y la suite fallaría con un mensaje que no dice qué falta.
+if ! "$PYTHON" -c "import xdist" >/dev/null 2>&1; then
+  echo "pre-commit: falta pytest-xdist en .venv; se bloquea el commit." >&2
+  echo "Para instalarlo: .venv/Scripts/python -m pip install --require-hashes -r requirements-dev.txt" >&2
+  exit 1
+fi
+
+# En un proceso la suite tardaba de 12 a 18 minutos. Va en 8 procesos repartida por archivo (--dist loadfile):
+# así cada fixture de módulo se arma en un solo proceso. test_reintentos.py corre después y solo: una de sus
+# pruebas mide segundos de reloj y, con la máquina ocupada por los otros procesos, se pasa del margen.
+if ! "$PYTHON" -m pytest -q -p no:cacheprovider -n 8 --dist loadfile --ignore=tests/test_reintentos.py tests; then
+  echo "pre-commit: fallaron las pruebas; se bloquea el commit." >&2
+  exit 1
+fi
+
+if ! "$PYTHON" -m pytest -q -p no:cacheprovider tests/test_reintentos.py; then
+  echo "pre-commit: fallaron las pruebas de tests/test_reintentos.py; se bloquea el commit." >&2
+  exit 1
+fi
+
+if [ "$(huella_de_lo_preparado)" != "$HUELLA_PREPARADA" ]; then
+  echo "pre-commit: lo preparado cambió mientras corrían las pruebas y gitleaks no vio el cambio; se bloquea el commit." >&2
+  echo "Vuelve a intentarlo sin preparar archivos mientras corre el hook." >&2
+  exit 1
+fi

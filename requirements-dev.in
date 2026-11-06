@@ -1,0 +1,11 @@
+# Solo desarrollo (D13-A): generar el lock, auditarlo y correr la suite del hook de pre-commit en
+# paralelo. No los necesita quien corre el README.
+# requirements-dev.txt se genera desde aquí y se instala encima de requirements.txt; los
+# paquetes que comparten tienen la misma versión.
+#   uv pip compile requirements-dev.in --universal --generate-hashes --python-version 3.12 \
+#     --exclude-newer 2026-10-26T00:00:00Z -o requirements-dev.txt
+# uv queda en 0.13.5 y no en 0.13.6: la 0.13.6 se subió el 2026-10-27, después del corte de D14-B.
+uv==0.13.5
+pip-audit==2.10.1
+# El hook reparte la suite en 8 procesos con pytest -n (de 14:43 a unos minutos el 2026-11-05).
+pytest-xdist==3.8.0

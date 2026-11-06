@@ -1,0 +1,185 @@
+# Choques entre fuentes que señala buscar_politicas (T2.7, C2.3). Cada entrada dice qué fuentes
+# chocan y qué paso de la cadena de precedencia aplica. Nunca trae la respuesta a una pregunta (G2):
+# ni plazos, ni montos, ni porcentajes, ni puestos. Lo que dice cada fuente lo lee el modelo en el
+# fragmento, y cuál prevalece lo decide el código con la regla del paso.
+#
+# Cadena de precedencia, en este orden:
+#   1. Regla que declaran los documentos: si la FAQ difiere de una política o un procedimiento,
+#      prevalece el normativo (regla_entre_documentos). La fecha de versión no decide.
+#   2. Choque dentro de un mismo documento, que no dice cuál de sus secciones prevalece: criterio
+#      propio, dicho como propio. Prevalece el lado cuyo texto trae la marca: la sección más
+#      específica o la que dice "siempre" o "sin excepción".
+#   3. Dato contra documento, sin regla: se citan las dos fuentes, se señala la inconsistencia y se
+#      nombra al área responsable; para el cliente de ese momento aplica el principio citado.
+#   4. Caso fuera del alcance escrito de una regla: el texto del documento no lo cubre. Los formatos
+#      que cubre cada documento, y si su regla se aplica como supuesto o se da solo como orientación,
+#      viven en config/supuestos.yaml (alcance_documentos); aquí solo se dice dónde está el alcance.
+#   5. Dos documentos normativos que chocan y ninguno dice cuál manda (D27-A): ningún lado prevalece. Se
+#      nombran las dos fuentes, se dice que ningún documento resuelve la diferencia y se nombra al área.
+#
+# Una fuente es documento y sección ("5.1", "P15"); fila es la etiqueta de la primera columna de la
+# tabla de esa sección. agente/herramientas/buscar_politicas.py valida cada entrada contra los
+# fragmentos de la base: la sección existe, la fila está en su tabla y la marca aparece en un solo
+# lado. Las claves desconocidas son error.
+
+version: "2026-11-04"
+
+regla_entre_documentos:
+  documento: FAQ-OPS-001
+  seccion: "1"
+  marca: "prevalece siempre la política o el procedimiento"
+  subordinado: FAQ-OPS-001
+
+# La tabla que da quién autoriza por monto: si una consulta trae un monto y la tabla vino en los fragmentos, el resultado
+# trae la fila que le toca, leída de la sección, con las excepciones de su subsección (§9.1). Solo si la consulta trae una
+# palabra de aplica_con_palabras: la tabla dice «Toda devolución o cambio», y una merma, un faltante de caja o un ajuste
+# tienen otro nivel (RC-08). «cambiar» no va, igual que en CH-06: «cambio de precio» o el fondo de cambio de la caja no son
+# una devolución. Una palabra de sin_fila_con_palabras deja sin fila: son los casos de §9.1, que van al Gerente de Tienda
+# sin importar el monto (RC-09). Todas se comparan por su raíz con el stemmer del índice.
+tabla_por_monto:
+  documento: PRO-SAC-021
+  seccion: "9"
+  aplica_con_palabras: [devolución, devolver, devolvió, devuelve, devuelto, regresar, reembolso, reembolsar]
+  sin_fila_con_palabras:
+    [fraude, fraudulento, bloqueo, bloqueado, bloquear, desbloquear, liberar, liberación, límite, empaque, defecto,
+     defectuoso, fabricación, plazo]
+
+# Documentos cuyo alcance cubre todas las tiendas físicas, sin distinguir formato: el resultado lo dice para que la
+# respuesta no invente una salvedad. La marca tiene que estar en la sección. Los que distinguen formato van en
+# config/supuestos.yaml (alcance_documentos).
+alcance_todas_las_tiendas:
+  - {documento: PRO-SAC-021, seccion: "1.1", marca: "todas las tiendas físicas"}
+
+# Secciones que definen un término y que una consulta larga puede dejar fuera de los 4 de BM25, porque sus otras palabras
+# pesan más. Si la consulta trae una de las palabras, comparada por raíz como en el paso 3, la sección se agrega con motivo
+# «define <termino>». No son choques: no dicen qué fuente prevalece y tampoco traen la respuesta a una pregunta (G2). El
+# aviso dice cómo aplicar la sección, sin cifras, y llega también si BM25 ya la trajo.
+secciones_que_definen:
+  - termino: prioridad
+    documento: FAQ-OPS-001
+    seccion: P20
+    palabras: [prioridad, prioridades, priorizar]
+    aviso: >-
+      Para aplicar esta tabla a tickets, abre sus descripciones con la herramienta tickets, metrica detalle, y filtra por la
+      prioridad que vas a revisar: el título no dice cuánto duró la falla ni si el producto estuvo en riesgo. Aplicar la tabla
+      es el criterio de los documentos: cítala, sin llamarlo criterio propio.
+  - termino: horario
+    documento: MAN-OPS-007
+    seccion: "2"
+    palabras: [horario, horarios, apertura, abrir, abre, cierre]
+    aviso: >-
+      Este es el horario que dan los documentos; ningún dato trae el de cada tienda. Si la respuesta depende de él, dilo y cita
+      esta sección. Si el texto de una sección y su checklist dan horas distintas, da las dos y di que no coinciden.
+
+choques:
+  - id: CH-01
+    paso: 1
+    tema: plazo de devolución de electrodomésticos
+    lados:
+      - [{documento: FAQ-OPS-001, seccion: P15}]
+      - [{documento: PRO-SAC-021, seccion: "3", fila: "Electrodomésticos y electrónicos menores"}]
+
+  - id: CH-02
+    paso: 1
+    tema: devolución de un producto que se vendió ya caducado
+    # Con estas palabras llega también el texto de la FAQ: sin él, la respuesta no puede decir en qué difiere.
+    trae_la_faq_con: [caducado, vencido]
+    lados:
+      - [{documento: FAQ-OPS-001, seccion: P13}]
+      - [{documento: PRO-SAC-021, seccion: "3", fila: "Perecederos"}]
+    principio: {documento: PRO-SAC-021, seccion: "1.2"}
+    marca_principio: "Ante la duda"
+    autorizacion: {documento: PRO-SAC-021, seccion: "9"}
+    aclaracion: "el plazo y el defecto se piden a la vez: uno no reemplaza al otro"
+
+  - id: CH-09
+    paso: 1
+    tema: manejo de perecederos según la duración de una falla de energía
+    lados:
+      - [{documento: FAQ-OPS-001, seccion: P11}]
+      - [{documento: MAN-OPS-007, seccion: "7.3"}]
+
+  - id: CH-10
+    paso: 1
+    tema: devolución en tienda de pedidos en línea
+    lados:
+      - [{documento: FAQ-OPS-001, seccion: P18}]
+      - [{documento: PRO-SAC-021, seccion: "1.1"}]
+
+  - id: CH-03
+    paso: 2
+    tema: rebaja de un lácteo el día en que se retira del anaquel
+    marca: "específica"
+    lados:
+      - [{documento: POL-OPS-014, seccion: "5.2"}, {documento: POL-OPS-014, seccion: "6.1"}]
+      - [{documento: POL-OPS-014, seccion: "6", fila: "2 días"}]
+
+  - id: CH-04
+    paso: 2
+    tema: rebaja de un perecedero el día en que se retira del anaquel
+    marca: "sin excepción"
+    lados:
+      - [{documento: POL-OPS-014, seccion: "5.1"}, {documento: POL-OPS-014, seccion: "6.1"}]
+      - [{documento: POL-OPS-014, seccion: "6", fila: "1 día (solo perecederos no lácteos)"}]
+
+  - id: CH-05
+    paso: 2
+    tema: quién autoriza una devolución fuera de plazo por defecto de fabricación
+    marca: "siempre requieren"
+    lados:
+      - [{documento: PRO-SAC-021, seccion: "9.1"}]
+      - [{documento: PRO-SAC-021, seccion: "4.1"}]
+    coinciden: [{documento: FAQ-OPS-001, seccion: P17}]
+
+  # D21-D (2026-10-31): la bandera perecedero del catálogo contra la definición por tipo de alimento.
+  # categorias son las del catálogo que nombra la definición; los SKU salen del catálogo de la base.
+  # Aplica cuando la consulta nombra uno de esos SKU (o dice "perecedero") y es de una devolución: llega
+  # una de las secciones de se_activa_con, por BM25 o porque otro choque la agregó, o la consulta trae
+  # una palabra de se_activa_con_palabras. Esas palabras se comparan por su raíz, con el mismo stemmer
+  # del índice: "devolver" cubre "devolvieron" y "devolverle"; "regresar", "regresa". "cambiar" no va:
+  # "cambio de precio del pan" no es una devolución. §2 no activa: BM25 la trae por la categoría
+  # ("merma de nuggets" suma Carnes, que §2 nombra). Cuando aplica, se agregan §2 (documento) y las
+  # secciones de se_activa_con que no llegaron, porque en ellas están las dos lecturas (D21: §3 y §5.1).
+  - id: CH-06
+    paso: 3
+    tema: qué productos cuentan como perecederos en una devolución
+    documento: {documento: PRO-SAC-021, seccion: "2"}
+    marca: "Producto perecedero"
+    dato: catalogo.perecedero
+    categorias: [Lácteos, Carnes, Frutas y verduras, Panadería]
+    se_activa_con:
+      - {documento: PRO-SAC-021, seccion: "3"}
+      - {documento: PRO-SAC-021, seccion: "5"}
+    se_activa_con_palabras: [devolución, devolver, devolvió, devuelve, devuelto, regresar, reembolso]
+    principio: {documento: PRO-SAC-021, seccion: "1.2"}
+    marca_principio: "Ante la duda"
+    area_responsable: Dirección de Servicio al Cliente
+    autorizacion: {documento: PRO-SAC-021, seccion: "9"}
+
+  - id: CH-07
+    paso: 4
+    tema: alcance por formato de tienda
+    alcance: {documento: POL-OPS-014, seccion: "1.1"}
+    dato: tiendas.formato
+    area_responsable: Dirección de Operaciones de Tienda
+
+  - id: CH-08
+    paso: 4
+    tema: alcance por formato de tienda
+    alcance: {documento: MAN-OPS-007, seccion: "1.1"}
+    dato: tiendas.formato
+    area_responsable: Dirección de Operaciones de Tienda
+
+  # D27-A (2026-11-02). Aparece cuando llega una de las dos fuentes y la consulta trae una de sus palabras, o cuando la
+  # consulta trae todas las de se_activa_con_todas aunque BM25 no traiga ninguna fuente, siempre comparadas por raíz como
+  # en el paso 3. Las dos secciones se agregan si no llegaron. Las palabras evitan que toda pregunta del checklist de
+  # cierre arrastre este choque, que solo toca la merma del día.
+  - id: CH-11
+    paso: 5
+    tema: autorización del registro diario de merma frente al retiro de perecederos al cierre
+    lados:
+      - {documento: POL-OPS-014, seccion: "7.1"}
+      - {documento: MAN-OPS-007, seccion: "5"}
+    se_activa_con_palabras: [merma, lote]
+    se_activa_con_todas: [merma, autorizar]
+    area_responsable: Dirección de Operaciones de Tienda

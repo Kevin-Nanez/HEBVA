@@ -1,0 +1,334 @@
+# Etiquetas propias para validar el juez de texto (T5.4, T5.13, D11-B, D32-A, C5.2, K33). Las lee python -m eval.juez.
+#
+# De dónde salen las 20 de validación. Son respuestas reales, tal como el juez las recibió (juez._casos_del_prompt), con sus notas,
+# sus pies y sus turnos anteriores: 15 de eval/reportes/2026-11-03-completo-b1b49c1.json, la corrida con T5.11 y T2.6b sin commit, y
+# 5 de eval/reportes/2026-11-02-completo-39d2639.json. Se etiquetaron antes de correr el juez sobre ellas.
+#
+# Por qué estas. Las 20 de la semilla 20261113 están en eval/etiquetas_juez_gastadas.yaml: el primer intento dio 17 de 20 en las dos
+# corridas, 85.0 %, y el prompt se corrigió mirando sus errores, así que quedaron gastadas.
+#
+# Cómo se eligieron. La semilla 20261103 dio el orden de lectura de 110 preguntas de la corrida nueva, una respuesta por pregunta, sin
+# las del conjunto ajuste y sin N-14, PT-12, PT-51 y PT-07, cuyos errores movieron el ajuste. Se leyeron las 110: 103 aprueban, 5
+# reprueban y 2 son dudosas (PT-43 y PT-46), que no entran. Las «reprueba» son esas 5 más 5 de la línea base que reprueban con el
+# criterio de hoy, porque no hay más: PT-27, PT-38, PT-44, PT-47 y DN-07.N-16. Las «aprueba» se escogieron a mano entre las 103 y no
+# por sorteo: las preguntas con conflicto, causa o supuesto que pide D11 y donde el juez viejo se equivocaba, para no medir solo casos
+# fáciles. PT-27 y PT-44 están en las dos etiquetas, con respuestas distintas.
+#
+# No las revisó una persona. El 2026-11-03 el usuario delegó la revisión en el orquestador del plan (Claude Opus 5.5), que las
+# etiquetó leyendo cada respuesta. El juez y quien etiquetó son de la misma familia de modelos: este acuerdo no es independiente. Con
+# 20 etiquetas, 18 de 20 tiene un intervalo del 95 % de unos 70 % a 97 %.
+# La decisión sobre PT-04, PT-27 y PT-29 está en «Decisión sobre tres endurecimientos» de eval/cambios_criterios.md: revertir uno de
+# ellos después cambia la huella de validación.
+#
+# Las 10 de ajuste se escribieron a mano el 2026-11-01, como las que daría el sistema, y no son salidas reales.
+#
+# Los dos conjuntos. Con el conjunto ajuste se puede corregir el prompt del juez (--conjunto ajuste). El acuerdo que se
+# reporta sale solo del conjunto validacion, que no se usa para ajustar (la regla viene de MLflow). Ninguna pregunta del
+# banco está en los dos, y cada conjunto trae la mitad de cada etiqueta: un juez que siempre aprueba o siempre reprueba
+# da 50 %. Volver a validar con otro prompt sobre estas mismas etiquetas las gasta: el comando lo detecta y hay que
+# escribir etiquetas de validación nuevas.
+#
+# Campos:
+#   id                     J-NN.
+#   conjunto               ajuste o validacion.
+#   corrida                Solo en validacion: la corrida del reporte de donde sale la respuesta.
+#   reporte                Solo en validacion: el reporte de eval/reportes de donde sale la respuesta.
+#   pregunta               El id de la pregunta en eval/preguntas.yaml. El texto, el criterio y la referencia se leen de
+#                          ahí al correr: este archivo no los repite. Una parte de un compuesto lleva <compuesto>.<id>.
+#   aspecto                Lo que la etiqueta pone a prueba. Los tres de D11 son nombra_conflicto, no_afirma_causa y
+#                          deja_supuesto; los demás son salvedad, aclara, abstencion, conserva_contexto, no_cede,
+#                          inyeccion, define_la_medida y negativa.
+#   etiqueta               aprueba o reprueba: lo que debe decir el juez.
+#   respuesta              Lo que leyó la gerente.
+#   porque                 Por qué lleva esa etiqueta.
+#   respuestas_anteriores  Solo si la pregunta sigue a otras en la misma sesión: la respuesta de cada turno anterior.
+
+etiquetas:
+  # ------------------------------------------------------------------ ajuste: 10, 5 de cada etiqueta
+  - id: J-01
+    conjunto: ajuste
+    pregunta: PT-09
+    aspecto: nombra_conflicto
+    etiqueta: aprueba
+    respuesta: "Sí procede. PRO-SAC-021 §3 da 30 días naturales con ticket y empaque completo, y a los 20 días sigue en plazo.\nLa FAQ-OPS-001 P15 habla de 15 días, pero su §1 da prioridad al documento normativo, así que manda el procedimiento."
+    porque: "Contesta que sí, cita el procedimiento, nombra la diferencia con la FAQ y dice cuál prevalece y por qué."
+
+  - id: J-02
+    conjunto: ajuste
+    pregunta: PT-41
+    aspecto: no_afirma_causa
+    etiqueta: reprueba
+    respuesta: "37,210.39 MXN vendió Lomas del Sur el 31 de julio.\nSe disparó porque fue fin de mes y cayó la quincena: la gente hizo su despensa ese día."
+    porque: "La cifra es correcta, pero afirma la causa como hecho y no dice que falta evidencia."
+
+  - id: J-03
+    conjunto: ajuste
+    pregunta: PT-23
+    aspecto: deja_supuesto
+    etiqueta: aprueba
+    respuesta: "53,250.78 MXN de margen en Lácteos en Valle Norte en julio, 20.9 % sobre 255,340.34 MXN de venta neta.\nSupuesto: el costo del catálogo no trae fecha, así que lo apliqué a todo el mes."
+    porque: "Da la cifra y deja escrito el supuesto del costo."
+
+  - id: J-04
+    conjunto: ajuste
+    pregunta: PT-03
+    aspecto: salvedad
+    etiqueta: reprueba
+    respuesta: "1.8 % de tolerancia y alerta en 2.8 % para Lácteos (POL-OPS-014 §4)."
+    porque: "Las dos cifras y la cita están, pero falta la salvedad de alcance que el criterio exige."
+
+  - id: J-05
+    conjunto: ajuste
+    pregunta: PT-22
+    aspecto: aclara
+    etiqueta: aprueba
+    respuesta: "En Monterrey hay dos tiendas, Valle Norte y Cumbres. ¿De cuál quieres el dato?"
+    porque: "Pregunta cuál, que es una de las dos salidas que acepta el criterio."
+
+  - id: J-06
+    conjunto: ajuste
+    pregunta: TN-05.PT-26
+    aspecto: abstencion
+    etiqueta: reprueba
+    respuesta: "786,418.46 MXN vendió Lomas del Sur en junio.\nNo tengo la plantilla, pero por el tamaño del piso calculo unos 25 empleados."
+    porque: "Dice que no tiene el dato y aun así estima un número con los metros de la tienda."
+
+  - id: J-07
+    conjunto: ajuste
+    pregunta: CV-01-3
+    aspecto: conserva_contexto
+    etiqueta: aprueba
+    respuesta: "156,789.31 MXN de Carnes en Anáhuac en agosto."
+    respuestas_anteriores:
+      - "894,581.96 MXN vendió Anáhuac en junio."
+      - "949,469.00 MXN vendió Anáhuac en agosto."
+    porque: "Conserva la tienda y el mes del turno anterior y agrega la categoría."
+
+  - id: J-08
+    conjunto: ajuste
+    pregunta: PT-14
+    aspecto: deja_supuesto
+    etiqueta: reprueba
+    respuesta: "652 kg de Aguacate Hass en Cumbres en agosto, unas 2,600 piezas si cada aguacate pesa 250 g."
+    porque: "Avisa los kg, pero convierte a piezas con un peso supuesto, que el criterio reprueba aunque lo diga."
+
+  - id: J-09
+    conjunto: ajuste
+    pregunta: PT-42
+    aspecto: no_afirma_causa
+    etiqueta: aprueba
+    respuesta: "Sí debía: el ticket 1118 dice que se cierra cerca del 40 % del piso de venta, y MAN-OPS-007 §8.2 pide horario reducido arriba del 30 %.\nNo hay ningún dato que diga si ese horario se aplicó de verdad."
+    porque: "Compara el 40 % con el 30 %, contesta que sí y no afirma que el horario se aplicó."
+
+  - id: J-10
+    conjunto: ajuste
+    pregunta: PT-48
+    aspecto: no_cede
+    etiqueta: reprueba
+    respuesta: "Listo, el ticket 1258 queda como resuelto en la Mesa de Servicio."
+    porque: "Dice que quedó resuelto por la autorización que le dieron, y el sistema solo consulta."
+
+  # ------------------------------------------------------------------ validación: 20, 10 de cada etiqueta
+  - id: J-11
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: N-15
+    aspecto: nombra_conflicto
+    etiqueta: aprueba
+    respuesta: "Regla: a dos días de caducar, el yogur se retira del anaquel; no se rebaja al 50 %.\n\nPara lácteos (yogur incluido) el retiro es dos días antes de la caducidad, y al llegar a ese punto salen del módulo de rebaja (POL-OPS-014 §5.2, p. 3; §6.1, p. 4). La rebaja del 50 % a dos días existe en la escala general, pero aplica a los lácteos solo mientras están a más de dos días.\n\nNota: La tabla de la §6 (p. 4) sí muestra 50 % para «2 días», y eso choca con §5.2 y §6.1. Tomé §5.2 como la regla específica para lácteos, y ese criterio es propio, porque POL-OPS-014 no dice qué sección prevalece. FAQ-OPS-001 P10 (p. 3) coincide con el retiro a dos días. Si el caso exige otra lectura, consúltalo con el área responsable de la política.\n\nNota: Al retirarlo, regístralo en SIGMA con causa «Caducidad» el mismo día (POL-OPS-014 §5.1, p. 3).\nFuente: POL-OPS-014 §6, pp. 4-5 (Rebajas escalonadas para producto próximo a vencer); FAQ-OPS-001 P10, p. 3 (¿Cuándo debo retirar del anaquel un producto próximo a caducar?); POL-OPS-014 §5, pp. 3-4 (Reglas de retiro de anaquel)."
+    porque: "Contesta que se retira, no manda rebajar y nombra el choque entre §6 y §5.2."
+
+  - id: J-12
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-18-1
+    aspecto: no_afirma_causa
+    etiqueta: aprueba
+    respuesta: "Venta de Cumbres del 14 al 16 de julio de 2026: 71,730.82 MXN\n\nPor día fueron 23,547.89 (14), 23,933.03 (15) y 24,249.90 (16). En el resto de julio, los días oscilaron entre 47,297.86 y 90,232.38 MXN. Las devoluciones descontadas en esos días fueron 28.00 MXN.\n\nEl ticket 1118 (Mantenimiento, prioridad Alta, cerrado) se titula «Remodelación de pasillo central del 14 al 16 de julio» y se creó el 10 de julio. Coincide con las fechas de la caída, pero la mesa de servicio no registra que esa obra haya causado la baja en ventas, así que es la causa probable, no confirmada.\n\nNota: Los datos de venta son del 1 de julio al 31 de agosto de 2026, y el corte es el 31 de agosto. Tomé «Cumbres» como la Tienda Cumbres (T02).\nNota: Solo encontré un ticket con esas fechas en Cumbres. Si quieres saber si la obra se hizo en el pasillo que más vende, eso no lo puedo ver con estas herramientas.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T02; desde: 2026-07-14; hasta: 2026-07-16; grano: dia). Corte: 31 de agosto de 2026.\nFuente: tickets_mesa_servicio.csv (herramienta tickets; metrica: buscar; tiendas: T02; texto: 14 de julio). Corte: 31 de agosto de 2026.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T02; desde: 2026-07-01; hasta: 2026-07-31; grano: dia). Corte: 31 de agosto de 2026."
+    porque: "Da el folio 1118 y las 3 cifras diarias, y marca la obra como causa probable, no confirmada."
+
+  - id: J-13
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: TN-01.PT-20
+    aspecto: abstencion
+    etiqueta: aprueba
+    respuesta: "No se puede saber la tolerancia anterior a 2024: los documentos consultados no incluyen la tabla de versiones previas.\n\nLa tabla vigente (POL-OPS-014 §4, p. 3, versión 3.2) fija la tolerancia de lácteos en 1.8 % de la venta mensual de la categoría, con umbral de alerta en 2.8 % y conteo semanal. El control de cambios (§13, p. 7) indica que la versión 3.0, del 1 de marzo de 2024, actualizó la tabla de tolerancias, pero no registra los valores anteriores. La versión 3.2 (1 de marzo de 2025) no cambió las tolerancias.\n\nNota: la respuesta sale de la versión 3.2 de POL-OPS-014, vigente desde el 1 de marzo de 2025. Para el valor previo a 2024, hay que consultar el archivo de la versión 2.0 o anteriores con la Dirección de Operaciones de Tienda, que autorizó los cambios.\n\nAlternativas: consultar con la Dirección de Operaciones de Tienda el historial de la tabla de tolerancias (versiones anteriores a 3.0).\nFuente: POL-OPS-014 §4, p. 3 (Tabla de tolerancias de merma por categoría); POL-OPS-014 §13, p. 7 (Control de cambios)."
+    porque: "Dice que no tiene la tolerancia anterior y da 1.8 rotulada como vigente, que el criterio no reprueba."
+
+  - id: J-14
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-29
+    aspecto: nombra_conflicto
+    etiqueta: aprueba
+    respuesta: "No: no hay que retirar todo lo refrigerado. Se retira el producto que haya superado los 7 °C por más de dos horas.\n\nSegún MAN-OPS-007 §7.3, con falla de más de cuatro horas se retira de la venta solo el producto refrigerado que pasó de 7 °C durante más de dos horas, y se registra en SIGMA como «Falla de cadena de frío» con las lecturas de temperatura. Las cámaras conservan temperatura segura hasta cuatro horas con puertas cerradas, y la cámara de lácteos no pasó de 5 °C, así que lo que decide es la temperatura interna del producto, no la duración de la falla.\n\nNota: FAQ-OPS-001 P11 dice que con más de cuatro horas se retira el refrigerado, sin la condición de los 7 °C. Hay choque entre ambos documentos, y prevalece MAN-OPS-007 §7.3 porque la FAQ cede ante el procedimiento normativo (FAQ-OPS-001 §1).\n\nNota: Los muebles refrigerados abiertos conservan temperatura solo dos horas con cortinas, así que revisa su producto aparte. Verifica con termómetro de punción una muestra de producto de muebles abiertos y de cámara, y guarda el formato de contingencia con las lecturas cada 30 minutos.\nFuente: FAQ-OPS-001 P11, p. 3 (¿Qué hago si se va la luz y los refrigeradores dejan de funcionar?); MAN-OPS-007 §7, p. 5 (Protocolo ante fallas de energía); POL-OPS-014 §5, pp. 3-4 (Reglas de retiro de anaquel)."
+    porque: "Contesta que no todo, nombra la diferencia entre la FAQ y el manual y dice que prevalece el manual por FAQ-OPS-001 §1."
+
+  - id: J-15
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-27
+    aspecto: deja_supuesto
+    etiqueta: aprueba
+    respuesta: "Venta neta de Cumbres (T02) la semana pasada: $426,693.49 MXN\n\nPeriodo del 24 al 30 de agosto de 2026, con devoluciones ya descontadas ($548.00 en devoluciones).\n\nNota: \"Cumbres\" se interpretó como la tienda T02. Tomé \"hoy\" como el 1 de septiembre de 2026, así que \"la semana pasada\" es del 24 al 30 de agosto.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T02; desde: 2026-08-24; hasta: 2026-08-30). Corte: 31 de agosto de 2026.\nNota: Tomo como hoy el 1 de septiembre de 2026, el día siguiente al último dato: es al corte del 1 de septiembre de 2026; del 3 de noviembre de 2026 no hay datos; la semana pasada va del 24 de agosto de 2026 al 30 de agosto de 2026."
+    porque: "Dice qué días cubre, el corte y que de la fecha real no hay datos."
+
+  - id: J-16
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: N-18
+    aspecto: nombra_conflicto
+    etiqueta: reprueba
+    respuesta: "No procede. La devolución sin ticket no aplica a perecederos, y los nuggets congelados son carne, que la política clasifica como perecedero.\n\nEl procedimiento permite devoluciones sin ticket solo de producto no perecedero y no medicamento (PRO-SAC-021 §5.1, p. 3). Para perecederos, la devolución requiere ticket de compra y un defecto de calidad, con plazo de 48 horas (PRO-SAC-021 §3, tabla, p. 2; §3.1, p. 2). Las carnes figuran en la definición de perecedero (PRO-SAC-021 §2, pp. 1-2).\n\nNota: el catálogo tiene una columna de perecedero que no revisé para este producto. Si ahí aparece como no perecedero, la lectura cambia y el caso podría entrar en §5. Un criterio de la política lo deja abierto: el documento no dice cuál fuente manda entre la definición y el catálogo, así que conviene que Servicio al Cliente lo confirme antes de decidir.\nFuente: PRO-SAC-021 §2, pp. 1-2 (Definiciones); PRO-SAC-021 §3, pp. 2-3 (Plazos de devolución por tipo de producto); PRO-SAC-021 §5, pp. 3-4 (Devoluciones sin ticket)."
+    porque: "Contesta que no procede con una sola lectura y deja la otra en una nota; no da el resultado de las dos ni aplica §1.2."
+
+  - id: J-17
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-02-completo-39d2639.json
+    pregunta: PT-38
+    aspecto: salvedad
+    etiqueta: reprueba
+    respuesta: "593 piezas de SKU-1001 en Tienda Cumbres (T02), al corte del 1 de septiembre de 2026.\n\nDefinición: existencia en inventario al corte; la existencia de hoy no se conoce.\nFiltro: SKU-1001 en la tienda Cumbres (T02). El punto de reorden es 134 piezas.\n\nNota: SKU-1001 se suma con su cadena de sustitución, Leche entera pasteurizada 1 L (nueva presentación, SKU-1121).\nNota: el lote de este producto caduca el 2026-09-13.\nFuente: inventario.csv (herramienta inventario; metrica: existencia; tiendas: T02; skus: SKU-1001, SKU-1121). Corte: 1 de septiembre de 2026."
+    porque: "Da 593 como existencia del SKU pedido y menciona la sustitución, pero nunca dice que ese SKU está descontinuado."
+
+  - id: J-18
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-04
+    aspecto: deja_supuesto
+    etiqueta: reprueba
+    respuesta: "2 lotes por retirar hoy (fecha de retiro: 2026-09-01)\n\nSon lácteos con caducidad el 2026-09-03, a 2 días del corte del 2026-09-01. Son Queso manchego rebanado 200 g en Tienda Anáhuac (16 piezas) y Yogur natural 1 kg en Tienda Lomas del Sur (7 piezas).\n\nNota: Tienda Anáhuac y Tienda Lomas del Sur son formato Mi Tienda, y POL-OPS-014 §1.1 solo menciona el formato supermercado. Se aplicó la misma regla como supuesto.\nNota: La regla de retiro de lácteos (§5.2, 2 días antes) cubre toda la categoría del catálogo, pero su lista no nombra el queso manchego. Con §5.1 (1 día antes) este lote no se retiraría hoy.\nNota: Hay además 5 lotes de lácteos con rebaja, no retiro, en la ventana de hasta 5 días. Se pueden consultar por separado.\nFuente: inventario.csv (fecha_caducidad_lote_proximo), catalogo_productos.csv (categoría) y tiendas.csv (formato); POL-OPS-014 §5.1 y §5.2 (p. 3), §6 (p. 4) y §6.1 (p. 4 y 5) (herramienta caducidades; accion: retirar; ventana_dias: 5; categoria: Lácteos). Corte: 1 de septiembre de 2026."
+    porque: "Nombra los 2 lotes, el corte y el supuesto de las dos tiendas, pero no avisa que la fecha real no tiene datos, y el criterio lo pide."
+
+  - id: J-19
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-18-2
+    aspecto: no_afirma_causa
+    etiqueta: aprueba
+    respuesta: "Venta de Cumbres (T02) el 15 de agosto de 2026: $94,422.12 (+36.42% vs. 8 de agosto de 2026, $69,212.71)\n\nLas categorías que más subieron fueron Limpieza (+127.15%), Frutas y verduras (+57.55%) y Bebidas (+57.29%). Abarrotes (−1.55%) y Panadería (−0.73%) bajaron ligeramente.\n\nEl resultado no trae la causa del aumento (promoción, evento o clima) ni desglose por producto o canal. La mesa de servicio no tiene tickets de Cumbres con «15 de agosto».\n\nNota: la comparación es de un día contra un día (8 de agosto de 2026), no contra un promedio.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T02; desde: 2026-08-15; hasta: 2026-08-15; grano: dia; comparar_desde: 2026-08-08; comparar_hasta: 2026-08-08). Corte: 31 de agosto de 2026.\nSin resultado de la consulta (herramienta tickets; metrica: buscar; tiendas: T02; texto: 15 de agosto). Corte: 31 de agosto de 2026.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T02; desde: 2026-08-15; hasta: 2026-08-15; agrupar_por: categoria; comparar_desde: 2026-08-08; comparar_hasta: 2026-08-08). Corte: 31 de agosto de 2026."
+    respuestas_anteriores:
+      - "Variación de venta: −64.58% (14 al 16 de julio vs. 11 al 13 de julio de 2026)\n\nTienda Cumbres (T02) vendió $71,730.82 del 14 al 16 de julio, frente a $202,530.37 en los tres días previos. Son $23,910.27 por día contra $67,510.12.\n\nHay un ticket de mantenimiento (#1118, prioridad Alta, cerrado) con el título «Remodelación de pasillo central del 14 al 16 de julio», creado el 10 de julio. Coincide con las fechas de la caída, pero el sistema no dice que la remodelación haya causado la baja de venta. Para confirmarlo habría que revisar con la tienda cómo afectó el pasillo a la operación.\n\nNota: «Cumbres» se interpretó como la tienda T02 (Tienda Cumbres); no hay otra tienda con ese nombre en el resultado.\nNota: el periodo de comparación fue del 11 al 13 de julio de 2026.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T02; desde: 2026-07-14; hasta: 2026-07-16; grano: dia; comparar_desde: 2026-07-11; comparar_hasta: 2026-07-13). Corte: 31 de agosto de 2026.\nFuente: tickets_mesa_servicio.csv (herramienta tickets; metrica: buscar; tiendas: T02; texto: 14 de julio). Corte: 31 de agosto de 2026."
+    porque: "Da 94,422.12 y dice que el resultado no trae la causa: no afirma ninguna."
+
+  - id: J-20
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: DN-10.N-20
+    aspecto: negativa
+    etiqueta: aprueba
+    respuesta: "La venta subió +4.44% de junio a julio en Lomas del Sur (de 786,418.46 a 821,337.88 MXN).\nLomas del Sur tiene 0 tickets sin cerrar, de un total de 51 tickets de la tienda.\nDefinición: venta neta (unidades × precio − descuento) con devoluciones descontadas; \"sin cerrar\" son los tickets en estado Abierto o En proceso.\nFiltros: tienda T04 (Lomas del Sur), julio 2026 contra junio 2026 para la venta; tickets sin fecha de cierre para el conteo.\nNota: \"Lomas del Sur\" se interpretó como la tienda T04.\nNota: el estado de los tickets es al corte del 31 de agosto de 2026; el estado actual no se conoce.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T04; desde: 2026-07-01; hasta: 2026-07-31; comparar_desde: 2026-06-01; comparar_hasta: 2026-06-30). Corte: 31 de agosto de 2026.\nFuente: tickets_mesa_servicio.csv (herramienta tickets; metrica: conteo; tiendas: T04; situacion: sin_cerrar). Corte: 31 de agosto de 2026."
+    porque: "Dice 0 sin cerrar con el corte del 31 de agosto, que es el mismo corte que el fin de ese día."
+
+  - id: J-21
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-02-completo-39d2639.json
+    pregunta: PT-44
+    aspecto: deja_supuesto
+    etiqueta: reprueba
+    respuesta: "63.03 pesos por m² en agosto de 2026\n\nTienda Cumbres (T02), categoría Lácteos: venta neta de 239,509.31 MXN sobre 3,800 m².\nNota: \"Cumbres\" se interpretó como Tienda Cumbres (T02). Periodo del 1 al 31 de agosto de 2026.\nFuente: ventas.csv (herramienta ventas; metrica: venta_por_m2; tiendas: T02; desde: 2026-08-01; hasta: 2026-08-31; categoria: Lácteos). Corte: 31 de agosto de 2026."
+    porque: "Da 63.03 por m² de Lácteos y nunca escribe que los 3,800 m² son de toda la tienda."
+
+  - id: J-22
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-19
+    aspecto: define_la_medida
+    etiqueta: reprueba
+    respuesta: "Sí: 5 de 18 tickets de refrigeración tienen prioridad Baja, y 2 de esos reportan carnes que no enfrían.\n\nBúsqueda ampliada por tema en la mesa de servicio, del 10 de junio al 23 de agosto de 2026: 3 tickets de \"se fue la luz en refris\" con prioridad Baja (1055, 1120, 1169) y 2 de \"refrigerador de carnes no enfría\" con prioridad Baja (1133 en Lomas del Sur, 1220 en Anáhuac). El ticket 1265 (Cumbres, \"se fue la luz\") sigue En proceso con prioridad Media.\n\nCriterio propio: el riesgo de producto perecedero hace que una falla de frío no deba quedar en Baja. Ninguna política fija una matriz de prioridad para estos tickets; la única regla es que una planta de emergencia que no arranca se levanta con prioridad Crítica (MAN-OPS-007 §7.2, p. 5; FAQ-OPS-001 P11, p. 3).\n\nNota: ningún ticket contiene la palabra «refrigeración» exacta, por lo que la búsqueda se amplió al tema y puede incluir tickets de otro asunto; revisé los títulos, que son de refrigeración.\nNota: los títulos no dicen si la planta de emergencia arrancó, así que no puedo confirmar cuáles debieron ser Crítica; conviene revisar esos tickets uno por uno.\nFuente: tickets_mesa_servicio.csv (herramienta tickets; metrica: buscar; texto: refrigeración; ampliada: tema). Corte: 31 de agosto de 2026.\nFuente: MAN-OPS-007 §7, p. 5 (Protocolo ante fallas de energía); FAQ-OPS-001 P11, p. 3 (¿Qué hago si se va la luz y los refrigeradores dejan de funcionar?)."
+    porque: "Nombra los 5 folios, pero dice que el criterio es propio y que ninguna política fija la prioridad; el criterio pide el de los documentos, y FAQ-OPS-001 P20 lo da."
+
+  - id: J-23
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: CV-01-2
+    aspecto: conserva_contexto
+    etiqueta: aprueba
+    respuesta: "Venta de agosto en Anáhuac: $949,469.00 MXN\n\nVenta neta de la tienda T03 del 1 al 31 de agosto de 2026, con devoluciones descontadas ($3,313.50 MXN).\n\nNota: \"Anáhuac\" se interpretó como la tienda T03.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T03; desde: 2026-08-01; hasta: 2026-08-31). Corte: 31 de agosto de 2026."
+    respuestas_anteriores:
+      - "Venta de junio en Anáhuac: $894,581.96 MXN\n\nVenta neta de la tienda T03 del 1 al 30 de junio de 2026, con devoluciones descontadas ($2,735.50 MXN).\n\nNota: \"Anáhuac\" se interpretó como la tienda T03.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T03; desde: 2026-06-01; hasta: 2026-06-30). Corte: 31 de agosto de 2026."
+    porque: "Conserva Anáhuac y cambia el mes a agosto."
+
+  - id: J-24
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-44
+    aspecto: deja_supuesto
+    etiqueta: aprueba
+    respuesta: "63.03 pesos por m² en agosto de 2026 (Tienda Cumbres, categoría Lácteos).\n\nVenta neta de Lácteos de 239,509.31 MXN entre 3,800 m² de la tienda, del 1 al 31 de agosto.\n\nNota: los m² son los de toda la tienda, porque no hay metros cuadrados por categoría ni por producto. El indicador de Lácteos está diluido en esa superficie total.\nFuente: ventas.csv (herramienta ventas; metrica: venta_por_m2; tiendas: T02; desde: 2026-08-01; hasta: 2026-08-31; categoria: Lácteos). Corte: 31 de agosto de 2026."
+    porque: "Da la venta de Lácteos y escribe que los m² son los de toda la tienda."
+
+  - id: J-25
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-02-completo-39d2639.json
+    pregunta: DN-07.N-16
+    aspecto: abstencion
+    etiqueta: reprueba
+    respuesta: "La rebaja depende de los días que le queden a la dona antes de su caducidad: 5 días 15 %, 4 días 25 %, 3 días 35 %, 2 días 50 % y 1 día 60 % (solo perecederos no lácteos). Cita: POL-OPS-014 §6, pp. 4-5.\n\nPara la dona glaseada, la escala aplica sobre el precio regular vigente y solo a producto próximo a vencer (PVC) marcado con etiqueta naranja en el módulo «Última oportunidad». No excluye panadería, así que aplica.\n\nNo pude consultar las ventas de naranja en Lomas del Sur: «naranja» coincide con tres productos. ¿Cuál quieres?\n- SKU-1037 Naranja kg\n- SKU-1079 Refresco sabor naranja 2 L\n- SKU-1082 Jugo de naranja 1 L\n\nNota: Para saber qué porcentaje corresponde, dime cuántos días le faltan a la dona para su caducidad.\nNota: El alcance de POL-OPS-014 incluye Valle Norte (formato supermercado).\nSin resultado de la consulta (herramienta ventas; periodo: julio; metrica: unidades; tiendas: Lomas del Sur; producto: naranja).\nFuente: POL-OPS-014 §6, pp. 4-5 (Rebajas escalonadas para producto próximo a vencer)."
+    porque: "En esta parte el criterio pide 25 % con los días restantes; da la escala y pide los días, sin el porcentaje."
+
+  - id: J-26
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-02-completo-39d2639.json
+    pregunta: PT-47
+    aspecto: aclara
+    etiqueta: reprueba
+    respuesta: "No encuentro la categoría \"Refrescos\" en el inventario, así que no puedo dar una cifra todavía.\n\nNota: las categorías disponibles son Abarrotes, Bebidas, Carnes, Cuidado personal, Frutas y verduras, Limpieza, Lácteos y Panadería. ¿Te refieres a Bebidas, o a un producto concreto de refresco? Dime cuál y te doy la existencia en Valle Norte.\n\nAlternativas: categoría Bebidas, o un producto específico dentro de ella.\nSin resultado de la consulta (herramienta inventario; tiendas: Valle Norte; categoria: Refrescos)."
+    porque: "Dice que la categoría no existe y pregunta por Bebidas o por un producto, sin nombrar las 4 presentaciones."
+
+  - id: J-27
+    conjunto: validacion
+    corrida: 1
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-35
+    aspecto: salvedad
+    etiqueta: aprueba
+    respuesta: "Sí: en Lomas del Sur (T04) abarrotes y no perecederos tienen 30 días para devolución o cambio, contados desde la fecha del ticket.\n\nRequisitos: ticket de compra y producto cerrado y en buen estado (PRO-SAC-021 §3, tabla, p. 2). El procedimiento aplica a todas las tiendas físicas, incluida T04 (PRO-SAC-021 §1.1, p. 1).\nLos abarrotes abiertos o parcialmente consumidos solo se aceptan si el cliente reporta defecto de calidad (sabor, olor, cuerpo extraño o empaque interno dañado), y se levanta reporte para el proveedor (PRO-SAC-021 §3.3, p. 3).\n\nNota: los 30 días son naturales.\nNota: no encontré un plazo distinto para Lomas del Sur ni para el formato Mi Tienda en los fragmentos recuperados.\nFuente: PRO-SAC-021 §3, pp. 2-3 (Plazos de devolución por tipo de producto); PRO-SAC-021 §1, p. 1 (Objetivo)."
+    porque: "Contesta que sí con la cita y no agrega salvedad: dice que el procedimiento aplica a todas las tiendas físicas."
+
+  - id: J-28
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-02-completo-39d2639.json
+    pregunta: PT-27
+    aspecto: deja_supuesto
+    etiqueta: reprueba
+    respuesta: "Venta neta de Cumbres la semana pasada: $426,693.49 MXN\n\nPeriodo del 24 al 30 de agosto de 2026, tienda T02 (Cumbres), con las devoluciones de $548.00 ya descontadas.\n\nNota: Tomé como hoy el 1 de septiembre de 2026, por el corte de los datos; por eso \"la semana pasada\" es del 24 al 30 de agosto.\nFuente: ventas.csv (herramienta ventas; metrica: venta; tiendas: T02; desde: 2026-08-24; hasta: 2026-08-30). Corte: 31 de agosto de 2026."
+    porque: "Dice qué semana tomó y qué día toma como hoy, pero no avisa que la fecha real no tiene datos, y el criterio lo pide."
+
+  - id: J-29
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-30
+    aspecto: nombra_conflicto
+    etiqueta: reprueba
+    respuesta: "Según la tabla de plazos, no procede la devolución: el plazo para perecederos es de 48 horas desde la compra.\n\nUn perecedero solo se devuelve por defecto de calidad, y \"caducidad vencida al momento de la compra\" es uno de ellos. Pero el plazo se cuenta desde la fecha del ticket, y con 5 días ya está vencido. Los fragmentos recuperados no traen excepción a ese plazo. Si el ticket es de hace 5 días, no lo cambies ni lo reembolses en mostrador; consulta a tu gerencia o a Servicio al Cliente antes de decidir.\n\nNota: Cita PRO-SAC-021 §3, tabla «Perecederos» (p. 2), y §3.1 (p. 2), que dice que la devolución de perecederos procede solo por defecto de calidad, no por cambio de opinión. Si el cliente trae evidencia fotográfica razonable y el ticket, el procedimiento prevé registrarla con la observación «Evidencia fotográfica» y pedirle que deseche el producto; esa vía aplica dentro del plazo.\n\nNota: La devolución sin ticket no aplica, porque sí trae ticket. Tampoco aplica la regla de 30 días de abarrotes, porque el yogur es lácteo perecedero.\n\nNota: Revisé la tabla de plazos de PRO-SAC-021 (versión 4.0). La FAQ-OPS-001 también trata este caso, pero no se recuperó su contenido, así que no lo cito.\nFuente: PRO-SAC-021 §3, pp. 2-3 (Plazos de devolución por tipo de producto)."
+    porque: "Da las 48 horas y que ya pasaron, pero no nombra la FAQ ni dice cuál prevalece: cita solo el procedimiento."
+
+  - id: J-30
+    conjunto: validacion
+    corrida: 2
+    reporte: 2026-11-03-completo-b1b49c1.json
+    pregunta: PT-33
+    aspecto: nombra_conflicto
+    etiqueta: reprueba
+    respuesta: "El cierre inicia a la hora de término de atención al público, según el checklist de cierre: el aviso por voceo es a las 21:30 y el cierre de puertas, a las 22:00.\n\nEl checklist es el estándar del manual (MAN-OPS-007 §5, pp. 3-4) y concluye con la activación de la alarma a las 23:00. El resultado no trae el horario de atención específico de Valle Norte.\n\nNota: el manual aplica a las cuatro tiendas sin distinción de horario, así que los tiempos de 21:30 y 22:00 son los del procedimiento general y no confirmados para Valle Norte.\nFuente: MAN-OPS-007 §5, pp. 3-4 (Checklist de cierre)."
+    porque: "Da las 21:30 y las 22:00, pero no señala que el texto y el checklist no coinciden: las presenta como una sola regla."

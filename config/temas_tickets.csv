@@ -1,0 +1,88 @@
+# Temas de los tickets (T1.3). Una fila por título normalizado (agente/texto_tickets.py: minúsculas,
+# sin acentos ni signos y sin el "gracias" final). Los tickets de datos/ traen 146 títulos escritos
+# y 56 normalizados; este archivo da el tema de cada uno de los 56.
+#
+# Un tema agrupa los títulos que, leídas sus descripciones, hablan del mismo equipo o del mismo
+# proceso; un título sin pares lleva su propio tema. Sirve para buscar ("las impresoras de caja") y
+# para ligar una falla con su política. No sirve para decir qué falla más: eso se cuenta por título,
+# porque un tema suma varios títulos y cambiaría el ranking.
+#
+# Revisión a mano, 2026-10-31, hecha por el asistente de código: se leyeron los 56 títulos y las
+# descripciones de todos los tickets. Cada título quedó con una sola categoría y un solo tema, y
+# tests/test_titulos_tickets.py comprueba cada ticket contra lo que dice su descripción. Falta la
+# revisión de una persona del equipo.
+#
+# Decisiones que una palabra clave habría errado:
+#  - "Impresora de caja" junta 7 títulos. Todos nombran la PrintMax TX-200 en la descripción
+#    (MAN-OPS-007 §9.1). Los tres "la caja N no imprime" son un solo problema con el número de caja
+#    dentro del título; por eso la normalización no los junta y el tema sí.
+#  - La impresora de oficina va aparte: su descripción dice "la de reportes, no la de cajas".
+#  - "anaquel" está en tres títulos de problemas distintos (un anaquel flojo, un precio y un
+#    producto caducado): cada uno va a su tema.
+#  - "se fue la luz en refris" va con Refrigeración; MAN-OPS-007 §7 y FAQ-OPS-001 P11 tratan ese caso.
+#  - "usuario bloqueado" habla del usuario del sistema de nómina: es un acceso (TI), no un error de nómina.
+#
+# Para un título nuevo, agrega una fila con el título ya normalizado. Sin fila, sus tickets quedan en
+# "Sin clasificar" y la construcción avisa cuántos son y cómo verlos.
+titulo_normalizado,tema
+# --- Cajas ---
+autocobro fuera de servicio,Autocobro
+bascula descalibrada,Báscula
+cajon de dinero no abre,Cajón de dinero
+impresora de caja atascada,Impresora de caja
+impresora de caja sin conexion,Impresora de caja
+impresora imprime caracteres raros,Impresora de caja
+la caja 2 no imprime,Impresora de caja
+la caja 6 no imprime,Impresora de caja
+la caja 8 no imprime,Impresora de caja
+lector de codigo no lee,Lector de código
+pantalla de caja parpadea,Pantalla de caja
+teclado con teclas pegadas,Teclado de caja
+terminal bancaria rechazada,Terminal bancaria
+ticket sale en blanco,Impresora de caja
+# --- TI ---
+actualizacion pendiente en pos,Actualización del punto de venta
+camaras sin grabar,Cámaras de seguridad
+correo no sincroniza,Correo electrónico
+impresora de oficina sin toner,Impresora de oficina
+internet lento en tienda,Red e internet
+no entra el sistema de inventario,Sistema de inventario (SIGMA)
+pantalla de precios apagada,Pantallas de precios
+reloj checador no lee huellas,Reloj checador
+se cayo el wifi de los handhelds,Red e internet
+usuario bloqueado,Usuarios y accesos
+# --- Mantenimiento ---
+aire acondicionado no enfria,Aire acondicionado
+anaquel flojo,Anaqueles
+congelador con hielo acumulado,Refrigeración
+cortina de bodega atorada,Puertas y cortinas
+foco fundido en estacionamiento,Iluminación
+fuga de agua en banos,Fugas de agua
+gotera en area de cajas,Fugas de agua
+montacargas no arranca,Montacargas
+puerta automatica no abre,Puertas y cortinas
+puerta de acceso de empleados no cierra,Puertas y cortinas
+refrigerador de carnes no enfria,Refrigeración
+remodelacion de pasillo central del 14 al 16 de julio,Obras y remodelaciones
+se fue la luz en refris,Refrigeración
+# --- Inventario ---
+ajuste de inventario negativo,Ajustes y conteos de inventario
+diferencia en conteo ciclico,Ajustes y conteos de inventario
+exceso de producto,Recepción de mercancía
+faltante en recepcion,Recepción de mercancía
+merma alta en frutas,Merma y caducidad
+precio en anaquel no coincide,Precios en anaquel
+producto caducado en anaquel,Merma y caducidad
+producto no llego del cedis,Surtido y reposición
+producto sin codigo en sistema,Códigos de producto
+reposicion urgente,Surtido y reposición
+# --- RH ---
+alta de empleado nuevo,Alta de personal
+baja de colaborador,Baja y finiquito
+cambio de horario,Turnos y plantilla
+capacitacion de manejo de alimentos,Capacitación
+duda de vacaciones,Vacaciones
+error en nomina,Nómina
+falta personal en fin de semana,Turnos y plantilla
+incapacidad por registrar,Incapacidades
+uniformes pendientes,Uniformes

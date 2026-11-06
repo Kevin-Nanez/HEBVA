@@ -1,0 +1,21 @@
+# Palabras vacías del español para el índice de texto de los fragmentos (T1.6).
+# DuckDB trae por omisión 571 palabras vacías en inglés; esta lista las reemplaza.
+#
+# Formato: palabras separadas por espacios, en los renglones que haga falta; los renglones que empiezan
+# con # son comentarios. Cada palabra va en minúsculas y sin acentos (solo a-z): el índice quita los
+# acentos y baja a minúsculas el texto y la consulta antes de compararlos con esta lista, y la
+# construcción rechaza una entrada con acento, mayúsculas, dígitos o signos.
+#
+# Criterio: solo palabras funcionales (artículos, preposiciones, conjunciones, pronombres,
+# determinantes, cuantificadores y formas de ser, estar, haber y tener) que aparecen en muchos
+# fragmentos sin decir de qué trata ninguno. No se agregan las que cargan una regla (siempre, nunca,
+# solo, unicamente, excepcion) ni los números escritos (dos, tres): las políticas y las preguntas se
+# buscan por ellas.
+a al algo algunas algunos ante antes cada como con contra cual cuales cualquier cuando de del dentro
+desde despues donde durante e el ella ellas ellos en entre era eran es esa esas ese eso esos esta estas
+este esto estos fue fueron ha han hasta hay haya la las le les lo los mas me menos mi mis misma mismo
+muy ni no nos o os otra otras otro otros para pero poco por porque que quien quienes se sea sean ser si
+sido sin sino sobre son su sus tambien te tiene tienen toda todas todo todos tu tus un una unas uno unos
+y ya yo
+# Abreviaturas con que se escribe en el chat: q (que), pa (para), d (de), k (que).
+q pa d k

@@ -1,0 +1,14 @@
+# Configuración de la interfaz de Streamlit (D6-A, T0.4).
+# La lee `streamlit run app.py` desde la raíz del repositorio y también con la ruta de app.py.
+
+[browser]
+# Apaga el envío de estadísticas de uso a Streamlit (por omisión es true).
+gatherUsageStats = false
+
+[server]
+# Quita el aviso que pide un correo en la terminal la primera vez que corre `streamlit run`:
+# espera una respuesta y, si se escribe un correo, Streamlit lo envía a sus servidores.
+showEmailPrompt = false
+# Escucha solo en este equipo. Sin esta línea Streamlit abre el puerto en todas las interfaces de
+# red, y desde otro equipo de la red se podría preguntar y gastar la llave del modelo.
+address = "127.0.0.1"

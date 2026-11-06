@@ -1,0 +1,35 @@
+Auditoría de dependencias con pip-audit
+
+Veredicto: CUMPLE. 0 vulnerabilidades altas o críticas abiertas y 0 de otra severidad, anotadas con su id.
+
+Corrida
+Fecha (UTC): 2026-11-06T04:46Z
+Herramienta: pip-audit 2.10.1
+Archivo auditado: requirements.txt
+sha256 del archivo: 293378a477e34c66c94dd37b1cdcea197cd566de0ce3bb370b849b59219931d3
+Paquetes fijados en el archivo: 79
+
+Resultado por servicio de vulnerabilidades
+pip-audit con PyPI: 79 paquetes auditados, 0 omitidos, 0 vulnerabilidades, código de salida 0
+  Salida de pip-audit: No known vulnerabilities found
+pip-audit con OSV: 79 paquetes auditados, 0 omitidos, 0 vulnerabilidades, código de salida 0
+  Salida de pip-audit: No known vulnerabilities found
+
+Criterio de aceptación: 0 vulnerabilidades altas abiertas; las demás, anotadas con su id
+Vulnerabilidades abiertas: 0
+Altas o críticas abiertas: 0
+Vulnerabilidades anotadas (id | paquete | severidad | corrige en | alias | servicios):
+  ninguna
+
+Cómo se corrió
+  Para repetirla, desde la raíz del repositorio: .venv/Scripts/python -m eval.auditar_dependencias
+  Por cada servicio (-s pypi y -s osv) equivale a:
+    python -m pip_audit -r <requirements.txt sin marcadores de entorno> --disable-pip --strict --progress-spinner off --desc off --cache-dir <carpeta nueva> -s <servicio> -f json
+  Sin marcadores porque pip-audit omite sin avisar las líneas cuyo marcador de entorno no aplica a la
+  máquina que audita, y el lock vale para Windows, macOS y Linux.
+  --disable-pip lee las versiones fijadas del lock sin instalar nada y --cache-dir nuevo evita respuestas guardadas.
+  El sha256 se calcula con saltos de línea LF para que sea el mismo en Windows, macOS y Linux.
+  Si cambia requirements.txt hay que volver a correrla: tests/test_auditoria_dependencias.py compara el sha256.
+  Con PROBAR_CON_RED=1 esa prueba repite la auditoría y comprueba que la misma corrida marca pyasn1 0.6.4, que tiene
+  cuatro avisos altos (CVE-2026-119194 a CVE-2026-119197) que corrige 0.6.5; así el 0 no sale de una auditoría que no ve nada.
+  Las excepciones de parche de seguridad están anotadas en requirements.in.

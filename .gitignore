@@ -1,0 +1,29 @@
+# docs/ guarda PDF y documentación descargada que algunas licencias no permiten redistribuir:
+# solo se versionan el plan y los dos índices.
+/docs/*
+!/docs/planes/
+/docs/planes/*
+!/docs/planes/2026-10-31-plan-implementacion.html
+!/docs/Estandares/
+/docs/Estandares/*
+!/docs/Estandares/indice.md
+!/docs/referencias/
+/docs/referencias/*
+!/docs/referencias/indice.md
+
+# Secretos: la llave vive solo en .env; la plantilla .env.example sí se versiona.
+.env
+.env.*
+!.env.example
+
+# Se regenera al instalar, al construir la base (build/) y al registrar turnos (logs/).
+# El venv de Python 3.12 no se ignora a sí mismo (el de 3.13 sí), y el plan acepta las dos.
+.venv/
+build/
+logs/
+
+# Caché de Python: sin esta regla git status no queda vacío después de correr la app.
+__pycache__/
+
+# Carpeta del paquete de entrega (T8.4): el zip que arma git archive no se versiona.
+/entrega/

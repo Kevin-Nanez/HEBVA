@@ -1,0 +1,3 @@
+# El avance de python -m eval.correr se regenera y puede pesar varios MB: no se versiona.
+*
+!.gitignore

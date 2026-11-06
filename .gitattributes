@@ -1,0 +1,32 @@
+*.pdf binary
+# Los datos del ejercicio se guardan byte a byte: con core.autocrlf=true un clon en Windows pasaría
+# los CSV a CRLF, su sha256 dejaría de coincidir y la construcción los rechazaría.
+datos/* -text
+# Hooks de sh siempre en LF: con el CRLF de core.autocrlf=true fallan en Linux y macOS.
+.githooks/* text eol=lf
+# Los .bat siempre en CRLF: sin él, cmd.exe puede fallar al saltar a una etiqueta.
+*.bat text eol=crlf
+# El zip de entrega sale de git archive sin docs/ (D17-A) y se arma con core.autocrlf=false: el comando está en
+# eval/reportes/entrega.md.
+/docs/ export-ignore
+# Del zip también salen la configuración del asistente de código (.claude/) y los reportes que solo sirvieron para
+# decidir durante el desarrollo; siguen en el repositorio. Viajan los que cita el README o la plantilla, los que leen
+# sus pruebas y la validación del juez, que eval.correr necesita para calificar con juez.
+/.claude/ export-ignore
+/eval/reportes/** export-ignore
+/eval/reportes/juez -export-ignore
+/eval/reportes/juez/** export-ignore
+/eval/reportes/juez/validacion-*.json -export-ignore
+/eval/reportes/juez/intentos.jsonl -export-ignore
+/eval/reportes/avance -export-ignore
+/eval/reportes/avance/.gitignore -export-ignore
+/eval/reportes/2026-11-05-completo-bfe7da1.* -export-ignore
+/eval/reportes/2026-11-05-completo-86c070e.* -export-ignore
+/eval/reportes/2026-11-04-completo-9600d3f-flash-lite.* -export-ignore
+/eval/reportes/2026-11-03-nucleo-680bd88-haiku.json -export-ignore
+/eval/reportes/adversarial-huecos-despues.json -export-ignore
+/eval/reportes/huecos-despues.json -export-ignore
+/eval/reportes/cuota-gemini.md -export-ignore
+/eval/reportes/accesibilidad.md -export-ignore
+/eval/reportes/auditoria-dependencias.txt -export-ignore
+/eval/reportes/entrega.md -export-ignore

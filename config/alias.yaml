@@ -1,0 +1,33 @@
+# Nombres coloquiales de tiendas y productos (T2.8). Se comparan sin acentos y en minúsculas.
+# agente/construir.py lo carga en la tabla alias (T1.2) y rechaza una tienda que no esté en
+# tiendas.csv, un canal que no esté en config/supuestos.yaml y un alias que apunte a dos destinos.
+# Una ciudad con dos tiendas es ambigua a propósito: la herramienta pide aclarar (P26, PT-22).
+
+tiendas:
+  T01: [valle norte, la valle norte, vn, t01, tienda valle norte]
+  T02: [cumbres, cumbre, las cumbres, t02, tienda cumbres]
+  T03: [anahuac, t03, tienda anahuac, san nicolas, san nicolas de los garza]
+  T04: [lomas del sur, lomas, t04, tienda lomas del sur, saltillo, coahuila]
+
+ciudades_ambiguas:
+  monterrey: [T01, T02]
+  mty: [T01, T02]
+  # Un estado con varias tiendas se aclara igual que una ciudad con dos.
+  nuevo leon: [T01, T02, T03]
+
+# Palabras que el resolvedor cambia antes de buscar en el catálogo.
+productos:
+  yogurt: yogur
+  yoghurt: yogur
+  refri: ""
+  refrigerador: ""
+  litro: ""
+  la de litro: ""
+  pan blanco: pan de caja
+  coca: refresco de cola
+  pollo fresco: pollo
+
+canales:
+  Ecommerce: [ecommerce, e-commerce, internet, en linea, linea, online, app, pagina, web, por internet, x internet]
+  # Sin "caja": choca con "Pan de caja blanco 680 g" y con la categoría Cajas de los tickets.
+  Piso: [piso, tienda fisica, mostrador]

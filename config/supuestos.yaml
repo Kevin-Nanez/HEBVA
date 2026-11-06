@@ -1,0 +1,151 @@
+# Definiciones, cortes y alcance del agente (T1.1). Es el único lugar donde viven: la carga, las
+# herramientas y el prompt las leen de aquí por medio de agente/definiciones.py. Cambiar una línea
+# cambia la cifra sin tocar el prompt; tests/test_definiciones.py prueba cada definición.
+# Las claves desconocidas son error: un nombre mal escrito no pasa en silencio.
+
+version: "2026-11-02"
+
+# Cortes con su archivo y de dónde sale la fecha (C3.3: brief o diccionario).
+cortes:
+  ventas:
+    fuente: ventas.csv
+    desde: 2026-06-01
+    hasta: 2026-08-31
+    origen: "diccionario de datos: «Periodo de ventas: 2026-06-01 a 2026-08-31»; el brief dice ventas de junio a agosto de 2026"
+  tickets:
+    fuente: tickets_mesa_servicio.csv
+    hasta: 2026-08-31
+    origen: "el diccionario da el estado de cada ticket «al corte» sin fecha; se usa el fin del periodo de ventas del diccionario, y el último registro es del 31 de agosto a las 20:37"
+  inventario:
+    fuente: inventario.csv
+    fecha: 2026-09-01
+    origen: "diccionario de datos: «Corte de inventario: 2026-09-01»; el brief dice inventario al 1 de septiembre"
+
+# D3-A (elegida 2026-10-31, confirmada por el entrevistador el 2026-11-02): "hoy" es el día siguiente al
+# último dato de ventas y tickets, que es también el corte del inventario. Toda respuesta con fecha relativa
+# dice esta interpretación, que es al corte de ese día, y avisa que la fecha real no tiene datos (P50).
+fecha_referencia: 2026-09-01
+aviso_fecha_relativa: "Tomo como hoy el {hoy}, el día siguiente al último dato: es al corte del {hoy}; la fecha real es otra: del {fecha_real} no hay datos"
+
+ventas:
+  # Venta neta del diccionario: unidades × precio − descuento, con las devoluciones descontadas.
+  # Las devoluciones son las filas con unidades negativas. Con false se excluyen esas filas y la
+  # venta sale sin restarlas (P03, C1.4 y C9.3). Las cifras de cada caso están en las pruebas,
+  # no aquí (G2).
+  incluir_devoluciones: true
+  definicion: "venta neta (unidades × precio − descuento) con las devoluciones descontadas; las devoluciones son las filas con unidades negativas"
+  # Diccionario: solo los Supermercados tienen canal Ecommerce (P05, PT-13).
+  canales: [Piso, Ecommerce]
+  canal_ecommerce_formatos: [Supermercado]
+  # Un SKU con sku_sustituto se suma con su sustituto, en los dos sentidos, cuando se pregunta por
+  # el producto (P01: SKU-1001 de baja el 14 de julio, SKU-1121 desde el 15).
+  sumar_sustitutos: true
+
+# Diccionario: el precio es por unidad de venta, «pieza, kg o paquete según el nombre». Un nombre
+# que termina en "kg" sin cantidad delante se vende a granel por kilo; los demás
+# ("Yogur natural 1 kg", "Huevo blanco 12 piezas") cuentan presentaciones. Kilos y presentaciones
+# no se suman entre sí (bandera roja de C1.4, P02).
+unidad_venta:
+  patron_kg: '(?<![\d.] )(?<= )kg$'
+  definicion: "kg cuando el nombre termina en «kg» sin cantidad delante: son kilos, no piezas; si no, pieza o paquete según la presentación del nombre"
+
+margen:
+  # El costo del catálogo no tiene fecha: usarlo para un mes pasado es un supuesto (PT-23).
+  supuesto: "costo de adquisición del catálogo, sin fecha, aplicado a todo el periodo"
+
+inventario:
+  # Reorden: existencia estrictamente menor que el punto (P04). Con los datos, < y <= dan los mismos
+  # casos porque ninguno está justo en el punto.
+  operador_reorden: "<"
+
+# D20-A (elegida 2026-10-31): centro con la venta diaria de agosto de calendario entre sus 31 días
+# (cuenta los días sin fila), piso y en línea, devoluciones descontadas, por SKU y sin sumar otras
+# presentaciones. Los días del mes salen del calendario, no de esta línea.
+# D23-D (elegida 2026-10-31, pesos del usuario): rango de 8 de cada 10 escenarios. La desviación
+# pondera las varianzas muestrales de cada mes, cada una contra la media de su propio mes, y se
+# resuelve media × d ± z × desviación × √d = existencia para cada extremo (T2.4).
+cobertura:
+  mes_base: 8
+  pesos_varianza: {6: 0.15, 7: 0.25, 8: 0.60}
+  z: 1.28
+  probabilidad: "8 de cada 10"
+  metodo: "centro: venta diaria de agosto entre 31 días, piso y en línea, devoluciones descontadas, por SKU; desviación con las varianzas muestrales de junio, julio y agosto ponderadas 15/25/60; z = 1.28; se resuelve media·d ± z·σ·√d = existencia"
+
+tickets:
+  # "Sin cerrar" = sin fecha de cierre (estados Abierto y En proceso). Cerrado = con fecha de
+  # cierre (estados Resuelto y Cerrado, P56).
+  sin_cerrar: "sin fecha_cierre (estados Abierto y En proceso)"
+  cerrado: "con fecha_cierre (estados Resuelto y Cerrado)"
+  # Antigüedad en días con dos decimales contra el fin del corte de tickets (31 de agosto a las
+  # 24:00), nunca contra el reloj (P29).
+  antiguedad_decimales: 2
+  # Tiempo objetivo de solución de FAQ-OPS-001 P20, en horas naturales (P19). Cumple el ticket que
+  # se cierra en el objetivo o antes.
+  objetivo_solucion_horas: {Baja: 120, Media: 48, Alta: 8, Crítica: 4}
+  # D5-A (elegida 2026-11-02): el horario hábil es el de la tienda. MAN-OPS-007 §2 da el horario
+  # estándar de atención y no limita los días, y ningún dato trae horario por tienda. La tabla de
+  # FAQ-OPS-001 P20 solo pone «hábiles» en Baja y Media: sus días valen las horas de esta ventana, y
+  # Alta y Crítica siguen en horas naturales. Cumple el ticket cuyas horas dentro de la ventana, de la
+  # creación al cierre, no pasan del objetivo. 0 es lunes. Con null, todo se mide en horas naturales.
+  horario_habil:
+    desde: "07:00"
+    hasta: "22:00"
+    dias_semana: [0, 1, 2, 3, 4, 5, 6]
+    prioridades: [Baja, Media]
+    origen: "el horario estándar de atención de MAN-OPS-007 §2"
+  primera_respuesta_medible: false
+
+# Métricas que los datos no permiten calcular (T2.2). La herramienta devuelve el error con tipo.
+metricas_no_calculables:
+  ticket_promedio: "ventas.csv tiene una fila por día, tienda, SKU y canal; no trae transacciones ni número de tickets de compra"
+  venta_por_hora: "las ventas vienen por día, sin hora"
+  merma_real: "los datos a los que tengo acceso no traen registros de merma de ninguna tienda (D1-A)"
+  meta_venta: "no hay metas de venta en los datos ni en los documentos; las únicas metas documentadas son de merma"
+  primera_respuesta: "los tickets no registran la fecha de primera respuesta"
+  inventario_historico: "el inventario es una sola foto al 2026-09-01; no hay historial"
+
+# Dudas del handoff. D1, D2 y D4 las contestó el entrevistador (registradas el 2026-11-01; corrigió D2 y
+# D4 el 2026-11-02) y D5 la cerró el usuario el 2026-11-02. Al cambiar
+# opcion aquí, el alcance de abajo cambia solo.
+dudas:
+  D1:
+    opcion: A
+    recomendada: A
+    estado: cerrada
+    texto: "el paquete no trae registros de merma, que viven en SIGMA, fuera del ejercicio: se cita la tolerancia y se dice que con estos datos no se mide la merma real"
+  D2:
+    opcion: C
+    recomendada: A
+    estado: cerrada
+    texto: "POL-OPS-014 se aplica igual a las cuatro tiendas, tolerancias y retiro de anaquel: sobre Anáhuac y Lomas del Sur se aclara que es un supuesto, porque §1.1 solo menciona el formato supermercado"
+  D4:
+    opcion: A
+    recomendada: A
+    estado: cerrada
+    texto: "Mi Tienda es la tienda de conveniencia ampliada de MAN-OPS-007 §1.1: el manual cubre las cuatro tiendas, sin salvedad"
+  D5:
+    opcion: A
+    recomendada: A
+    estado: cerrada
+    texto: "el horario hábil de Baja y Media es el de la tienda, con la ventana escrita en cada respuesta de cumplimiento; Alta y Crítica van en horas naturales"
+
+# Formatos que cubre el texto de cada documento según la opción vigente de su duda. Un documento que no
+# está aquí no tiene alcance por formato declarado. Con una opción de opciones_por_supuesto la regla se
+# aplica igual a los formatos que el texto no cubre, y la respuesta aclara que es un supuesto; con las
+# demás opciones, en esos formatos la regla se da solo como orientación.
+alcance_documentos:
+  POL-OPS-014:
+    duda: D2
+    formatos_por_opcion:
+      A: [Supermercado]
+      B: [Supermercado, Mi Tienda]
+      C: [Supermercado]
+    opciones_por_supuesto: [C]
+    salvedad: "POL-OPS-014 §1.1 solo menciona el formato supermercado, no Mi Tienda"
+  MAN-OPS-007:
+    duda: D4
+    formatos_por_opcion:
+      A: [Supermercado, Mi Tienda]
+      B: [Supermercado]
+    opciones_por_supuesto: []
+    salvedad: "MAN-OPS-007 §1.1 aplica a supermercado y tienda de conveniencia ampliada; con la opción B, Mi Tienda no es ese formato"

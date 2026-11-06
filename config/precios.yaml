@@ -1,0 +1,70 @@
+# Precios por millón de tokens, en dólares, con los que agente/registro.py calcula costo_usd de cada llamada (T4.3).
+# Consultados el 2026-10-31 en la página oficial de cada proveedor (plan, "Precios usados") y revisados de nuevo el
+# 2026-11-03 en T8.6; si algo cambia antes de la entrega del 2026-11-06, se vuelve a revisar. Las pruebas los cotejan
+# con los de genai-prices, que usa ModelResponse.cost() de Pydantic AI.
+#
+# fecha_consulta es la de T4.3: tests/test_registro.py la fija y cada línea del registro la copia. La fecha de cada
+# revisión posterior va en "revisado", dentro del modelo.
+#
+# entrada: tokens a precio completo (la entrada menos la lectura y la escritura de caché).
+# cache_lectura y cache_escritura: los de caché. Sin precio publicado de escritura (Gemini y Mistral), se cobra como
+# entrada.
+# salida: incluye el razonamiento, que Anthropic y Google cobran como salida (Ministral 3 3B no razona).
+# hasta_tokens_de_prompt: el tramo con este precio. Un prompt más grande deja costo_usd en null, sin inventar el
+# precio del tramo siguiente (con el tope de historial de D10 no se llega).
+# Gemini 3.5 Flash-Lite y 3.8 Flash cuestan $0 en el plan gratuito: costo_usd es el del plan de pago, como pide la
+# tabla de metas.
+#
+# Revisión de T8.6, 2026-11-03, en la página de precios de cada proveedor y sin llamar a ningún modelo:
+#   - Haiku 5.5, Sonnet 5.5, Gemini 3.5 Flash-Lite y Gemini 3.8 Flash: los precios de abajo siguen vigentes.
+#   - Ministral 3 3B entra con $0.10, $0.10 y $0.01 de lectura de caché. El plan daba ese último como no publicado;
+#     Mistral lo publica hoy en su columna "Cached input" y genai-prices lo trae igual.
+#   - Gemini 3.8 Flash: el precio de lanzamiento sigue hasta el 2026-12-31 y se duplica el 2027-01-01.
+#   - Los ids siguen activos: Anthropic marca claude-haiku-5-5 y claude-sonnet-5-5 como Active (retiro no antes del
+#     2027-10-07 y del 2027-09-28); Google marca gemini-3.5-flash-lite y gemini-3.8-flash como Stable, sin fecha de
+#     cierre; la ficha de ministral-3b-2512 no trae fecha de retiro.
+#   - Las páginas de Google (ai.google.dev/gemini-api/docs/...) redirigen con 301 a aistudio.google.com/docs/...
+#     con el mismo contenido.
+
+fecha_consulta: 2026-10-31
+
+modelos:
+  claude-haiku-5-5:
+    fuente: https://platform.claude.com/docs/en/about-claude/pricing
+    revisado: 2026-11-03
+    entrada: "0.10"
+    salida: "0.50"
+    cache_lectura: "0.01"
+    cache_escritura: "0.125"   # vida de 5 minutos
+    hasta_tokens_de_prompt: 100000
+  claude-sonnet-5-5:
+    fuente: https://platform.claude.com/docs/en/about-claude/pricing
+    revisado: 2026-11-03
+    entrada: "2.00"
+    salida: "10.00"
+    cache_lectura: "0.10"
+    cache_escritura: "2.50"    # vida de 5 minutos
+  gemini-3.5-flash-lite:
+    fuente: https://ai.google.dev/gemini-api/docs/pricing
+    revisado: 2026-11-03
+    entrada: "0.30"
+    salida: "2.50"
+    cache_lectura: "0.03"      # más $1.00 por millón de tokens por hora de almacenamiento, que no es por llamada
+  gemini-3.8-flash:
+    # Consultado el 2026-11-03: estos precios valen hasta el 2026-12-31; desde el 2027-01-01 son 1.50, 7.50 y 0.15 y
+    # el almacenamiento de caché sube de $0.50 a $1.00 por hora. genai-prices ya aplica esa fecha: desde ese día su
+    # costo de este modelo es el doble del que da este archivo, y habrá que cambiarlo aquí y en
+    # tests/test_precio_gemini_flash.py.
+    fuente: https://ai.google.dev/gemini-api/docs/pricing
+    revisado: 2026-11-03
+    entrada: "0.75"
+    salida: "3.75"
+    cache_lectura: "0.075"     # más $0.50 por millón de tokens por hora de almacenamiento, que no es por llamada
+  ministral-3b-2512:
+    # Opción descartada del plan (D7-C). Su precio sirve para costear el descarte y para que una llamada suya no salga
+    # con costo_usd en null. Mistral no publica precio de escritura de caché.
+    fuente: https://docs.mistral.ai/inference/pricing
+    revisado: 2026-11-03
+    entrada: "0.10"
+    salida: "0.10"
+    cache_lectura: "0.01"

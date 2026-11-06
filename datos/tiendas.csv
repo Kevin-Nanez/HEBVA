@@ -1,0 +1,5 @@
+tienda_id,nombre,ciudad,estado,formato,m2,fecha_apertura
+T01,Tienda Valle Norte,Monterrey,Nuevo León,Supermercado,4200,2014-03-15
+T02,Tienda Cumbres,Monterrey,Nuevo León,Supermercado,3800,2016-09-01
+T03,Tienda Anáhuac,San Nicolás de los Garza,Nuevo León,Mi Tienda,1500,2019-05-20
+T04,Tienda Lomas del Sur,Saltillo,Coahuila,Mi Tienda,1350,2021-11-10
